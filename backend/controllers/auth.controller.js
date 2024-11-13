@@ -46,13 +46,32 @@ export async function signup(req, res) {
   }
 }
 export async function login(req, res) {
-  res.send("Welcome to login");
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
+    }
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    const isPasswordMatch = await bcryptjs.compare(password, user.password);
+    if (!isPasswordMatch) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
+    generateTokenAndSetToken(user._id, res); //jwt
+    res.status(200).json({ message: "Logged in successfully" });
+  } catch (error) {
+    res.status(400).json({ message: "Internal server error" });
+  }
 }
 export async function logout(req, res) {
   try {
     res.clearCookie("jwt-token");
     res.status(201).json({ message: "Logged out successfully" });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ message: "Internal server error" });
   }
 }
